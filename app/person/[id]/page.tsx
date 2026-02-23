@@ -54,7 +54,7 @@ export default function PersonProfilePage() {
                             {personDetails ? (
                                 <div className="h-32 w-32 sm:h-40 sm:w-40 rounded-xl border-4 border-card bg-muted overflow-hidden shadow-lg relative">
                                     <img
-                                        src={`/api/media/thumbnail/${id}`}
+                                        src={personDetails.thumbnail_base64 || ''}
                                         alt={id}
                                         className="h-full w-full object-cover"
                                         onError={(e) => {

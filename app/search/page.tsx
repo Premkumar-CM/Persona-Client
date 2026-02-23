@@ -118,8 +118,8 @@ export default function SearchPage() {
                 {/* Text Search Tab */}
                 {activeTab === "text" && (
                     <div className="p-6 space-y-6">
-                        <div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
+                        <div className="max-w-2xl mx-auto w-full space-y-4">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                                 Search Everything
                             </h2>
                             <div className="flex gap-3">
@@ -236,8 +236,8 @@ export default function SearchPage() {
                 {/* Image Search Tab */}
                 {activeTab === "image" && (
                     <div className="p-6 space-y-6">
-                        <div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
+                        <div className="max-w-2xl mx-auto w-full space-y-4">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                                 Search by Face Image
                             </h2>
                             <div className="space-y-4">

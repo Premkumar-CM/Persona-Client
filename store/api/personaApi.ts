@@ -11,7 +11,7 @@ export interface EnrolledPerson {
     name: string;
     age: number;
     description: string | null;
-    thumbnail_url: string | null;
+    thumbnail_base64: string | null;
 }
 
 export interface SearchTextResponse {
@@ -153,7 +153,13 @@ export const personaApi = baseApi.injectEndpoints({
         // List Enrolled
         getEnrolledPersons: builder.query<EnrolledPerson[], void>({
             query: () => ENDPOINTS.ENROLLMENT.LIST,
-            providesTags: ["Enrollment"],
+            providesTags: (result) =>
+                result
+                    ? [
+                        ...result.map(({ id }) => ({ type: "Enrollment" as const, id })),
+                        { type: "Enrollment", id: "LIST" },
+                    ]
+                    : [{ type: "Enrollment", id: "LIST" }],
         }),
     }),
 });

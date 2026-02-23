@@ -1,11 +1,45 @@
 "use client";
 
-import { Activity, CheckCircle, Clock, XCircle, FileVideo, Loader2 } from "lucide-react";
-import { useGetMediaQuery } from "@/store/api/mediaApi";
+import { Activity, CheckCircle, Clock, XCircle, FileVideo, Loader2, Play, Pause, Trash2 } from "lucide-react";
+import { useGetMediaQuery, useDeleteMediaMutation } from "@/store/api/mediaApi";
+import { useStopProcessingMutation, useRestartProcessingMutation } from "@/store/api/personaApi";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function ProcessingPage() {
+    const router = useRouter();
+
     // We can use polling here too so it updates dynamically
     const { data: media, isLoading, isError } = useGetMediaQuery({}, { pollingInterval: 3000 });
+
+    const [deleteMedia, { isLoading: isDeleting }] = useDeleteMediaMutation();
+    const [stopProcessing, { isLoading: isPausing }] = useStopProcessingMutation();
+    const [restartProcessing, { isLoading: isResuming }] = useRestartProcessingMutation();
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Delete this media file?")) return;
+        try {
+            await deleteMedia(id).unwrap();
+        } catch (err) {
+            console.error("Delete failed:", JSON.stringify(err));
+        }
+    };
+
+    const handlePause = async (id: string) => {
+        try {
+            await stopProcessing(id).unwrap();
+        } catch (err) {
+            console.error("Pause failed:", err);
+        }
+    };
+
+    const handleResume = async (id: string) => {
+        try {
+            await restartProcessing(id).unwrap();
+        } catch (err) {
+            console.error("Resume failed:", err);
+        }
+    };
 
     const stats = {
         pending: 0,
@@ -87,7 +121,11 @@ export default function ProcessingPage() {
                     ) : activeTasks.length > 0 ? (
                         <div className="space-y-1">
                             {activeTasks.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 rounded-lg px-3 py-3 border border-transparent bg-muted/30">
+                                <div
+                                    key={item.id}
+                                    className="flex items-center gap-4 rounded-lg px-3 py-3 border border-transparent bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={() => router.push(`/media/${item.id}`)}
+                                >
                                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                                         {item.status === "processing" ? (
                                             <Loader2 className="h-5 w-5 text-primary animate-spin" />
@@ -107,6 +145,51 @@ export default function ProcessingPage() {
                                                 </span>
                                             )}
                                         </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {(item.status === "processing" || item.status === "pending") && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-warning"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePause(item.id);
+                                                }}
+                                                disabled={isPausing}
+                                                title="Pause processing"
+                                            >
+                                                <Pause className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {(item.status === "stopped" || item.status === "failed") && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-success"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleResume(item.id);
+                                                }}
+                                                disabled={isResuming}
+                                                title="Resume processing"
+                                            >
+                                                <Play className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(item.id);
+                                            }}
+                                            disabled={isDeleting}
+                                            title="Delete media"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             ))}

@@ -16,7 +16,7 @@ export default function EnrollmentPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [enrollPerson, { isLoading, isSuccess, isError }] = useEnrollPersonMutation();
-    const { data: enrolledPersons, isLoading: loadingEnrolled, isError: errorEnrolled } = useGetEnrolledPersonsQuery();
+    const { data: enrolledPersons, isLoading: loadingEnrolled, isError: errorEnrolled, refetch } = useGetEnrolledPersonsQuery();
 
     // Cleanup object URLs to avoid memory leaks
     const imagesRef = useRef(selectedImages);
@@ -52,6 +52,7 @@ export default function EnrollmentPage() {
         selectedImages.forEach((img) => formData.append("face_image", img.file));
         try {
             await enrollPerson(formData).unwrap();
+            refetch();
             setPersonId("");
             setAge("");
             setDescription("");
@@ -263,7 +264,7 @@ export default function EnrollmentPage() {
                                     >
                                         <div className="aspect-square w-full bg-muted relative">
                                             <img
-                                                src={`/api/enroll/images/${person.id}`}
+                                                src={person.thumbnail_base64 || ''}
                                                 alt={person.name}
                                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                 onError={(e) => {

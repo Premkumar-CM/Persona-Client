@@ -13,6 +13,7 @@ export interface DetectedPerson {
     identity: string;
     confidence: number;
     face_thumbnailPath: string;
+    thumbnail_base64?: string;
     id: string;
     timestamps: DetectedPersonTimestamp[];
 }
@@ -64,6 +65,13 @@ export interface TranscriptSegment {
 export interface TranscriptResponse {
     transcript: string;
     transcript_segments: TranscriptSegment[];
+}
+
+export interface ThumbnailPerson {
+    identity: string;
+    thumbnail_id: string;
+    thumbnail_base64: string;
+    total_detections: number;
 }
 
 export const mediaApi = baseApi.injectEndpoints({
@@ -141,6 +149,19 @@ export const mediaApi = baseApi.injectEndpoints({
             }),
             providesTags: (_result, _error, id) => [{ type: "Media", id }],
         }),
+
+        // GET media clip (stream)
+        getMediaClip: builder.query<Blob, { id: string; start: number; end: number }>({
+            query: ({ id, start, end }) => ({
+                url: `${ENDPOINTS.MEDIA.GET_CLIP(id)}?start=${start}&end=${end}`,
+                responseHandler: (response) => response.blob(),
+            }),
+        }),
+
+        // GET unique identities with thumbnails
+        getThumbnailList: builder.query<ThumbnailPerson[], void>({
+            query: () => ENDPOINTS.MEDIA.THUMBNAIL_LIST,
+        }),
     }),
 });
 
@@ -153,4 +174,6 @@ export const {
     useAnnotateMediaMutation,
     useGetTranscriptQuery,
     useGetMediaFileQuery,
+    useGetMediaClipQuery,
+    useGetThumbnailListQuery,
 } = mediaApi;

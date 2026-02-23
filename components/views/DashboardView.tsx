@@ -10,9 +10,15 @@ import {
     CheckCircle,
     Clock,
     Upload,
+    Play,
+    Pause,
+    Trash2,
 } from "lucide-react";
-import { useGetMediaQuery } from "@/store/api/mediaApi";
+import { useGetMediaQuery, useDeleteMediaMutation } from "@/store/api/mediaApi";
+import { useStopProcessingMutation, useRestartProcessingMutation } from "@/store/api/personaApi";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface StatCardProps {
     title: string;
@@ -65,7 +71,37 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function DashboardView() {
+    const router = useRouter();
     const { data: media, isLoading, isError } = useGetMediaQuery({});
+
+    const [deleteMedia, { isLoading: isDeleting }] = useDeleteMediaMutation();
+    const [stopProcessing, { isLoading: isPausing }] = useStopProcessingMutation();
+    const [restartProcessing, { isLoading: isResuming }] = useRestartProcessingMutation();
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Delete this media file?")) return;
+        try {
+            await deleteMedia(id).unwrap();
+        } catch (err) {
+            console.error("Delete failed:", JSON.stringify(err));
+        }
+    };
+
+    const handlePause = async (id: string) => {
+        try {
+            await stopProcessing(id).unwrap();
+        } catch (err) {
+            console.error("Pause failed:", err);
+        }
+    };
+
+    const handleResume = async (id: string) => {
+        try {
+            await restartProcessing(id).unwrap();
+        } catch (err) {
+            console.error("Resume failed:", err);
+        }
+    };
 
     const totalMedia = media?.length ?? 0;
     const totalFaces =
@@ -162,7 +198,8 @@ export default function DashboardView() {
                                 {recentMedia.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-accent transition-colors"
+                                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-accent transition-colors cursor-pointer"
+                                        onClick={() => router.push(`/media/${item.id}`)}
                                     >
                                         <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                                             <FileVideo className="h-4 w-4 text-muted-foreground" />
@@ -177,6 +214,51 @@ export default function DashboardView() {
                                                     {item.status}
                                                 </span>
                                             </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            {(item.status === "processing" || item.status === "pending") && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-muted-foreground hover:text-warning"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handlePause(item.id);
+                                                    }}
+                                                    disabled={isPausing}
+                                                    title="Pause processing"
+                                                >
+                                                    <Pause className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            {(item.status === "stopped" || item.status === "failed") && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-muted-foreground hover:text-success"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResume(item.id);
+                                                    }}
+                                                    disabled={isResuming}
+                                                    title="Resume processing"
+                                                >
+                                                    <Play className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(item.id);
+                                                }}
+                                                disabled={isDeleting}
+                                                title="Delete media"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}

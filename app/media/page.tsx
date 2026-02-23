@@ -52,7 +52,7 @@ export default function MediaPage() {
     if (media) {
         const hasProcessing = media.some(m => m.status === "processing" || m.status === "pending");
         if (hasProcessing && pollingInterval === undefined) {
-            setPollingInterval(3000);
+            setPollingInterval(10000); // Poll every 10 seconds
         } else if (!hasProcessing && pollingInterval !== undefined) {
             setPollingInterval(undefined);
         }

@@ -38,6 +38,19 @@ export default function MediaDetailPage() {
         pollingInterval
     });
 
+    const isAudio = useMemo(() => {
+        if (!media?.fileName) return false;
+        const ext = media.fileName.split('.').pop()?.toLowerCase();
+        return ext ? ['mp3', 'wav', 'm4a', 'flac', 'aac'].includes(ext) : false;
+    }, [media?.fileName]);
+
+    // Sync activeTab when isAudio is determined
+    useEffect(() => {
+        if (isAudio && !initialTab && activeTab === "annotated") {
+            setActiveTab("transcript");
+        }
+    }, [isAudio, initialTab, activeTab]);
+
     // Fetch transcript data
     const { data: transcript, isLoading: transcriptLoading, isError: transcriptError } =
         useGetTranscriptQuery(id, {
@@ -48,7 +61,7 @@ export default function MediaDetailPage() {
     if (media) {
         const isProcessing = media.status === "processing" || media.status === "pending";
         if (isProcessing && pollingInterval === undefined) {
-            setPollingInterval(3000);
+            setPollingInterval(10000); // Poll every 10 seconds
         } else if (!isProcessing && pollingInterval !== undefined) {
             setPollingInterval(undefined);
         }
@@ -134,9 +147,9 @@ export default function MediaDetailPage() {
         ? `/api/stream/media/${id}/file?token=${encodeURIComponent(token)}`
         : `/api/stream/media/${id}/file`;
 
-    const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-        const mediaError = (e.target as HTMLVideoElement).error;
-        console.error("Video playback error:", mediaError?.code, mediaError?.message);
+    const handleError = (e: React.SyntheticEvent<HTMLMediaElement>) => {
+        const mediaError = (e.target as HTMLMediaElement).error;
+        console.error("Media playback error:", mediaError?.code, mediaError?.message);
         setVideoError(true);
     };
 
@@ -249,16 +262,18 @@ export default function MediaDetailPage() {
 
             {/* Tab Navigation */}
             <div className="flex items-center border-b border-border shrink-0">
-                <button
-                    onClick={() => setActiveTab("annotated")}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "annotated"
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
-                >
-                    <Video className="h-4 w-4" />
-                    Annotated Video
-                </button>
+                {!isAudio && (
+                    <button
+                        onClick={() => setActiveTab("annotated")}
+                        className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "annotated"
+                            ? "border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                    >
+                        <Video className="h-4 w-4" />
+                        Annotated Video
+                    </button>
+                )}
                 <button
                     onClick={() => setActiveTab("transcript")}
                     className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "transcript"
@@ -325,9 +340,9 @@ export default function MediaDetailPage() {
                                                     onClick={() => handleSeekToFace(face)}
                                                 >
                                                     <div className="h-9 w-9 rounded overflow-hidden shrink-0 bg-muted">
-                                                        {face.face_thumbnailPath ? (
+                                                        {face.thumbnail_base64 ? (
                                                             <img
-                                                                src={`/api/media/${media.id}/thumbnails/${face.face_thumbnailPath.split('/').pop()}`}
+                                                                src={face.thumbnail_base64}
                                                                 alt={face.identity}
                                                                 className="h-full w-full object-cover"
                                                                 onError={(e) => {
@@ -362,9 +377,9 @@ export default function MediaDetailPage() {
                                                     onClick={() => handleSeekToFace(face)}
                                                 >
                                                     <div className="h-9 w-9 rounded overflow-hidden shrink-0 bg-muted">
-                                                        {face.face_thumbnailPath ? (
+                                                        {face.thumbnail_base64 ? (
                                                             <img
-                                                                src={`/api/media/${media.id}/thumbnails/${face.face_thumbnailPath.split('/').pop()}`}
+                                                                src={face.thumbnail_base64}
                                                                 alt={face.identity}
                                                                 className="h-full w-full object-cover grayscale opacity-80"
                                                                 onError={(e) => {
@@ -395,22 +410,34 @@ export default function MediaDetailPage() {
                 {activeTab === "transcript" && (
                     <div className="flex w-full h-full flex-col lg:flex-row">
                         {/* Original Video Area (Left) */}
-                        <div className="flex-1 bg-black flex flex-col min-h-0 relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <video
-                                    ref={originalVideoRef}
-                                    src={originalSrc}
-                                    controls
-                                    className="w-full h-full object-contain"
-                                    onLoadedMetadata={handleVideoLoadedMetadata}
-                                >
-                                    Your browser does not support the video tag.
-                                </video>
+                        <div className={`flex-1 ${isAudio ? "bg-muted/5" : "bg-black"} flex flex-col min-h-0 relative`}>
+                            <div className="absolute inset-0 flex items-center justify-center p-8 bg-muted/10">
+                                {isAudio ? (
+                                    <div className="w-full max-w-2xl px-6">
+                                        <audio
+                                            ref={originalVideoRef as unknown as React.RefObject<HTMLAudioElement>}
+                                            src={originalSrc}
+                                            controls
+                                            className="w-full"
+                                            onLoadedMetadata={handleVideoLoadedMetadata}
+                                        />
+                                    </div>
+                                ) : (
+                                    <video
+                                        ref={originalVideoRef}
+                                        src={originalSrc}
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        onLoadedMetadata={handleVideoLoadedMetadata}
+                                    >
+                                        Your browser does not support the video tag.
+                                    </video>
+                                )}
                             </div>
 
                             {/* Live Caption Overlay */}
                             {activeTranscriptSegment && (
-                                <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-none px-8 md:px-16 z-10 break-words">
+                                <div className={`absolute ${isAudio ? "bottom-8" : "bottom-16"} left-0 right-0 flex justify-center pointer-events-none px-8 md:px-16 z-10 break-words`}>
                                     <div className="bg-black/60 text-white px-4 py-2 rounded font-medium text-sm md:text-[15px] leading-snug text-center shadow-lg backdrop-blur-sm border border-white/10" style={{ textShadow: "1px 1px 2px black" }}>
                                         {activeTranscriptSegment.text}
                                     </div>
