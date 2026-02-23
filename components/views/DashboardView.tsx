@@ -73,7 +73,7 @@ const getStatusIcon = (status: string) => {
 
 export default function DashboardView() {
     const router = useRouter();
-    const { data: media, isLoading, isError } = useGetMediaQuery({});
+    const { data: media, isLoading, isError } = useGetMediaQuery({}, { pollingInterval: 3000 });
 
     const [deleteMedia, { isLoading: isDeleting }] = useDeleteMediaMutation();
     const [stopProcessing, { isLoading: isPausing }] = useStopProcessingMutation();
