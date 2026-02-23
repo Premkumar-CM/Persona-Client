@@ -26,6 +26,7 @@ export interface SearchImageResponse {
     status: string;
     person: string;
     confidence: number;
+    message?: string;
     media: {
         id: string;
         filename: string;

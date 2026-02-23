@@ -140,93 +140,122 @@ export default function MediaPage() {
                             </Button>
                         </div>
                     ) : media && media.length > 0 ? (
-                        <div className="space-y-1">
-                            {media.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center gap-4 rounded-lg px-3 py-3 hover:bg-accent transition-colors cursor-pointer"
-                                    onClick={() => {
-                                        router.push(`/media/${item.id}`);
-                                    }}
-                                >
-                                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                                        <FileVideo className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{item.fileName}</p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            {getStatusIcon(item.status)}
-                                            <span className="text-xs text-muted-foreground capitalize">
-                                                {item.status}
-                                            </span>
-                                            {item.progress > 0 && item.progress < 100 && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {item.progress}%
-                                                </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {media.map((item) => {
+                                const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+                                const originalSrc = token
+                                    ? `/api/stream/media/${item.id}/file?token=${encodeURIComponent(token)}`
+                                    : `/api/stream/media/${item.id}/file`;
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:border-primary/50 transition-all cursor-pointer relative shadow-sm hover:shadow-md"
+                                        onClick={() => router.push(`/media/${item.id}`)}
+                                    >
+                                        <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
+                                            {(item.status === "completed" || item.status === "ready") ? (
+                                                <video
+                                                    src={originalSrc}
+                                                    className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity"
+                                                    muted
+                                                    playsInline
+                                                    loop
+                                                    onMouseEnter={(e) => {
+                                                        const p = e.currentTarget.play();
+                                                        if (p !== undefined) p.catch(() => { });
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.pause();
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center gap-2">
+                                                    <FileVideo className="h-10 w-10 text-white/20" />
+                                                </div>
+                                            )}
+
+                                            {/* Status Badge */}
+                                            <div className="absolute top-2 left-2">
+                                                <div className="bg-black/70 backdrop-blur-md px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold text-white flex items-center gap-1.5 border border-white/10 shadow-sm">
+                                                    {getStatusIcon(item.status)}
+                                                    <span>{item.status}</span>
+                                                    {item.progress > 0 && item.progress < 100 && (
+                                                        <span className="text-white/70 ml-0.5">{item.progress}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons Overlay */}
+                                            <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                {(item.status === "processing" || item.status === "pending") && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-md bg-black/60 hover:bg-black/90 text-white border border-white/10 backdrop-blur-sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handlePause(item.id);
+                                                        }}
+                                                        disabled={isPausing}
+                                                        title="Pause processing"
+                                                    >
+                                                        <Pause className="h-3 w-3 text-warning" />
+                                                    </Button>
+                                                )}
+                                                {(item.status === "stopped" || item.status === "failed") && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-md bg-black/60 hover:bg-black/90 text-white border border-white/10 backdrop-blur-sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleResume(item.id);
+                                                        }}
+                                                        disabled={isResuming}
+                                                        title="Resume processing"
+                                                    >
+                                                        <Play className="h-3 w-3 text-success" />
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="secondary"
+                                                    size="icon"
+                                                    className="h-7 w-7 rounded-md bg-black/60 hover:bg-destructive text-white border border-white/10 backdrop-blur-sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(item.id);
+                                                    }}
+                                                    disabled={isDeleting}
+                                                    title="Delete media"
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+
+                                            {/* Play overlay center icon (only if ready) */}
+                                            {(item.status === "completed" || item.status === "ready") && (
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="bg-primary/90 rounded-full p-3 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                                                        <Play className="h-6 w-6 text-primary-foreground ml-0.5" />
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
+
+                                        <div className="p-3 border-t border-border flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                <FileVideo className="h-4 w-4 text-primary" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold truncate" title={item.fileName}>
+                                                    {item.fileName}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        {(item.status === "processing" || item.status === "pending") && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-muted-foreground hover:text-warning"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handlePause(item.id);
-                                                }}
-                                                disabled={isPausing}
-                                                title="Pause processing"
-                                            >
-                                                <Pause className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                        {(item.status === "stopped" || item.status === "failed") && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-muted-foreground hover:text-success"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleResume(item.id);
-                                                }}
-                                                disabled={isResuming}
-                                                title="Resume processing"
-                                            >
-                                                <Play className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                        {(item.status === "completed" || item.status === "ready") && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push(`/media/${item.id}`);
-                                                }}
-                                                title="Play video"
-                                            >
-                                                <Play className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(item.id);
-                                            }}
-                                            disabled={isDeleting}
-                                            title="Delete media"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-16 text-center gap-2">

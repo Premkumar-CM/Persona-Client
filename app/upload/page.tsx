@@ -168,8 +168,8 @@ export default function UploadPage() {
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer ${isDragging
-                                        ? "border-primary bg-primary/5"
-                                        : "border-border hover:border-primary/60 hover:bg-muted/30"
+                                    ? "border-primary bg-primary/5"
+                                    : "border-border hover:border-primary/60 hover:bg-muted/30"
                                     }`}
                             >
                                 <input
@@ -228,11 +228,12 @@ export default function UploadPage() {
                                                         <img src={fileUrl} alt={file.name} className="absolute inset-0 h-full w-full object-cover" />
                                                     )}
                                                     {isVideo && (
-                                                        <video src={fileUrl} className="absolute inset-0 h-full w-full object-cover" />
+                                                        <video src={fileUrl} controls className="absolute inset-0 h-full w-full object-cover" />
                                                     )}
                                                     {isAudio && (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <FileAudio className="h-8 w-8 text-muted-foreground" />
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 p-2 gap-3">
+                                                            <FileAudio className="h-10 w-10 text-muted-foreground" />
+                                                            <audio src={fileUrl} controls className="w-full h-8" />
                                                         </div>
                                                     )}
                                                     {(!isImage && !isVideo && !isAudio) && (

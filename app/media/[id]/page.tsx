@@ -85,14 +85,18 @@ export default function MediaDetailPage() {
 
         if (activeIndex !== -1) {
             const container = transcriptContainerRef.current;
-            const activeElement = container.children[0]?.children[activeIndex] as HTMLElement;
-            if (activeElement) {
-                const containerRect = container.getBoundingClientRect();
-                const elementRect = activeElement.getBoundingClientRect();
-                const isVisible = elementRect.top >= containerRect.top && elementRect.bottom <= containerRect.bottom;
+            // The scrollable div has a child div wrapping the buttons
+            const wrapper = container.children[0];
+            if (wrapper && wrapper.children.length > activeIndex) {
+                const activeElement = wrapper.children[activeIndex] as HTMLElement;
+                if (activeElement) {
+                    const containerRect = container.getBoundingClientRect();
+                    const elementRect = activeElement.getBoundingClientRect();
+                    const isVisible = elementRect.top >= containerRect.top && elementRect.bottom <= containerRect.bottom;
 
-                if (!isVisible) {
-                    activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (!isVisible) {
+                        activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             }
         }
@@ -179,6 +183,13 @@ export default function MediaDetailPage() {
         }
     }, [activeTab]);
 
+    // Get active transcript segment for live captions
+    const activeTranscriptSegment = useMemo(() => {
+        if (!transcript?.transcript_segments) return null;
+        return transcript.transcript_segments.find(
+            seg => currentTime >= seg.start && currentTime <= seg.end
+        );
+    }, [transcript, currentTime]);
 
     if (mediaLoading) {
         return (
@@ -210,14 +221,6 @@ export default function MediaDetailPage() {
             }
         });
     }
-
-    // Get active transcript segment for live captions
-    const activeTranscriptSegment = useMemo(() => {
-        if (!transcript?.transcript_segments) return null;
-        return transcript.transcript_segments.find(
-            seg => currentTime >= seg.start && currentTime <= seg.end
-        );
-    }, [transcript, currentTime]);
 
     return (
         <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] max-w-[1400px] mx-auto w-full gap-3">

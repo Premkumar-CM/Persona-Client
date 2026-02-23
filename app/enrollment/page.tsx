@@ -3,21 +3,41 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScanFace, Upload, Users, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useEnrollPersonMutation } from "@/store/api/personaApi";
 
 export default function EnrollmentPage() {
     const [personId, setPersonId] = useState("");
     const [age, setAge] = useState("");
     const [description, setDescription] = useState("");
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [selectedImages, setSelectedImages] = useState<{ file: File; url: string }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [enrollPerson, { isLoading, isSuccess, isError }] = useEnrollPersonMutation();
 
+    // Cleanup object URLs to avoid memory leaks
+    const imagesRef = useRef(selectedImages);
+    useEffect(() => {
+        imagesRef.current = selectedImages;
+    }, [selectedImages]);
+
+    useEffect(() => {
+        return () => {
+            imagesRef.current.forEach((img) => URL.revokeObjectURL(img.url));
+        };
+    }, []);
+
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
-        setSelectedImages((prev) => [...prev, ...files]);
+        const newImages = files.map((file) => ({
+            file,
+            url: URL.createObjectURL(file),
+        }));
+        setSelectedImages((prev) => [...prev, ...newImages]);
+        // Reset input value so the same file can be selected again if needed
+        if (e.target) {
+            e.target.value = "";
+        }
     };
 
     const handleEnroll = async () => {
@@ -26,7 +46,7 @@ export default function EnrollmentPage() {
         formData.append("person_id", personId);
         formData.append("age", age);
         if (description) formData.append("description", description);
-        selectedImages.forEach((img) => formData.append("face_image", img));
+        selectedImages.forEach((img) => formData.append("face_image", img.file));
         try {
             await enrollPerson(formData).unwrap();
             setPersonId("");
@@ -123,25 +143,50 @@ export default function EnrollmentPage() {
                         </div>
 
                         {selectedImages.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {selectedImages.map((img, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-xs"
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                        Selected Images ({selectedImages.length})
+                                    </p>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedImages([])}
+                                        className="h-6 text-xs text-muted-foreground hover:text-destructive"
                                     >
-                                        <ScanFace className="h-3 w-3 text-primary" />
-                                        <span className="truncate max-w-[120px]">{img.name}</span>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
-                                            }}
-                                            className="text-muted-foreground hover:text-foreground"
+                                        Clear all
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                    {selectedImages.map((img, i) => (
+                                        <div
+                                            key={i}
+                                            className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted flex flex-col items-center justify-center"
                                         >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
+                                            <img
+                                                src={img.url}
+                                                alt={img.file.name}
+                                                className="absolute inset-0 h-full w-full object-cover"
+                                            />
+                                            {/* Overlay Gradient for readability */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                                                <p className="text-[10px] font-medium text-white truncate w-full" title={img.file.name}>{img.file.name}</p>
+                                            </div>
+                                            {/* Remove Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
+                                                    URL.revokeObjectURL(img.url);
+                                                }}
+                                                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/50 hover:bg-destructive text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+                                                title="Remove file"
+                                            >
+                                                <span className="text-xs leading-none">&times;</span>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
