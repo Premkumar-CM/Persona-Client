@@ -4,6 +4,8 @@ export const ENDPOINTS = {
     MEDIA: {
         GET_ALL: "/api/media/",
         GET_ONE: (id: string) => `/api/media/${id}`,
+        GET_TRANSCRIPT: (id: string) => `/api/media/${id}/transcript`,
+        GET_FILE: (id: string) => `/api/media/${id}/file`,
         DELETE: (id: string) => `/api/media/${id}`,
         UPLOAD: "/api/upload-media/",
         UPLOAD_AUDIO: "/api/upload-audio/",
@@ -17,7 +19,8 @@ export const ENDPOINTS = {
         ENROLL: "/api/enroll/",
     },
     YOUTUBE: {
-        DOWNLOAD: "/api/download-youtube/",
+        DOWNLOAD: "/api/download-video",
+        DOWNLOAD_PLAYLIST: "/api/download-playlist",
     },
     TASKS: {
         STATUS: (id: string) => `/api/task-status/${id}`,

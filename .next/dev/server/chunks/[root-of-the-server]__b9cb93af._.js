@@ -89,6 +89,19 @@ async function GET(request, { params }) {
                 "Content-Type": "application/json"
             }
         });
+        // Check if response is a video/audio file (binary stream)
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.startsWith("video/") || contentType.startsWith("audio/")) {
+            // Stream the binary content directly
+            const blob = await res.blob();
+            return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$6_$40$babel$2b$core$40$7$2e$29$2e$0_react$2d$dom$40$19$2e$2$2e$3_react$40$19$2e$2$2e$3_$5f$react$40$19$2e$2$2e$3$2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"](blob, {
+                status: res.status,
+                headers: {
+                    "Content-Type": contentType,
+                    "Content-Disposition": res.headers.get("content-disposition") || "inline"
+                }
+            });
+        }
         return parseJson(res);
     } catch (err) {
         return backendUnreachable(err);

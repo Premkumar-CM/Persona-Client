@@ -35,6 +35,21 @@ export async function GET(
         const res = await fetch(url, {
             headers: { "Content-Type": "application/json" },
         });
+
+        // Check if response is a video/audio file (binary stream)
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.startsWith("video/") || contentType.startsWith("audio/")) {
+            // Stream the binary content directly
+            const blob = await res.blob();
+            return new NextResponse(blob, {
+                status: res.status,
+                headers: {
+                    "Content-Type": contentType,
+                    "Content-Disposition": res.headers.get("content-disposition") || "inline",
+                },
+            });
+        }
+
         return parseJson(res);
     } catch (err) {
         return backendUnreachable(err);

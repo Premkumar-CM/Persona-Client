@@ -14,6 +14,11 @@ export interface SearchTextResponse {
         progress: number;
         uploaded_at: string;
         task_id: string;
+        matching_segments?: {
+            start: number;
+            end: number;
+            text: string;
+        }[];
     }[];
 }
 
@@ -33,6 +38,20 @@ export interface YouTubeDownloadResponse {
     success: boolean;
     message: string;
     task_id: string;
+}
+
+export interface PlaylistVideo {
+    title: string;
+    url: string;
+    id: string;
+}
+
+export interface PlaylistDownloadResponse {
+    success: boolean;
+    message: string;
+    task_id: string;
+    videos_found: number;
+    available_videos: PlaylistVideo[];
 }
 
 export interface TaskStatusResponse {
@@ -85,6 +104,19 @@ export const personaApi = baseApi.injectEndpoints({
             invalidatesTags: [{ type: "Media", id: "LIST" }],
         }),
 
+        // YouTube playlist download
+        downloadPlaylist: builder.mutation<
+            PlaylistDownloadResponse,
+            { playlist_url: string }
+        >({
+            query: (body) => ({
+                url: ENDPOINTS.YOUTUBE.DOWNLOAD_PLAYLIST,
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: [{ type: "Media", id: "LIST" }],
+        }),
+
         // Task status
         getTaskStatus: builder.query<TaskStatusResponse, string>({
             query: (id) => ENDPOINTS.TASKS.STATUS(id),
@@ -117,6 +149,7 @@ export const {
     useLazySearchMediaQuery,
     useSearchByImageMutation,
     useDownloadYoutubeMutation,
+    useDownloadPlaylistMutation,
     useGetTaskStatusQuery,
     useStopProcessingMutation,
     useRestartProcessingMutation,

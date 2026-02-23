@@ -1,5 +1,12 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/[...path]/route": "app/api/[...path]/route.js",
-  "/page": "app/page.js"
+  "/api/stream/[...path]/route": "app/api/stream/[...path]/route.js",
+  "/enrollment/page": "app/enrollment/page.js",
+  "/media/[id]/page": "app/media/[id]/page.js",
+  "/media/page": "app/media/page.js",
+  "/page": "app/page.js",
+  "/processing/page": "app/processing/page.js",
+  "/search/page": "app/search/page.js",
+  "/upload/page": "app/upload/page.js"
 }

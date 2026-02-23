@@ -25,7 +25,7 @@ export interface Transcript {
 
 export interface MediaFile {
     fileName: string;
-    status: "pending" | "processing" | "completed" | "failed";
+    status: "pending" | "processing" | "completed" | "failed" | "stopped" | "ready";
     progress: number;
     filePath?: string;
     videoPath?: string;
@@ -53,6 +53,17 @@ export interface DeleteResponse {
 export interface AnnotateResponse {
     success: boolean;
     annotated_video_path: string;
+}
+
+export interface TranscriptSegment {
+    start: number;
+    end: number;
+    text: string;
+}
+
+export interface TranscriptResponse {
+    transcript: string;
+    transcript_segments: TranscriptSegment[];
 }
 
 export const mediaApi = baseApi.injectEndpoints({
@@ -115,6 +126,21 @@ export const mediaApi = baseApi.injectEndpoints({
                 method: "GET",
             }),
         }),
+
+        // GET transcript with segments
+        getTranscript: builder.query<TranscriptResponse, string>({
+            query: (id) => ENDPOINTS.MEDIA.GET_TRANSCRIPT(id),
+            providesTags: (_result, _error, id) => [{ type: "Media", id }],
+        }),
+
+        // GET original media file (stream)
+        getMediaFile: builder.query<Blob, string>({
+            query: (id) => ({
+                url: ENDPOINTS.MEDIA.GET_FILE(id),
+                responseHandler: (response) => response.blob(),
+            }),
+            providesTags: (_result, _error, id) => [{ type: "Media", id }],
+        }),
     }),
 });
 
@@ -125,4 +151,6 @@ export const {
     useUploadAudioMutation,
     useDeleteMediaMutation,
     useAnnotateMediaMutation,
+    useGetTranscriptQuery,
+    useGetMediaFileQuery,
 } = mediaApi;

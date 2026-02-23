@@ -1343,6 +1343,8 @@ const ENDPOINTS = {
     MEDIA: {
         GET_ALL: "/api/media/",
         GET_ONE: (id)=>`/api/media/${id}`,
+        GET_TRANSCRIPT: (id)=>`/api/media/${id}/transcript`,
+        GET_FILE: (id)=>`/api/media/${id}/file`,
         DELETE: (id)=>`/api/media/${id}`,
         UPLOAD: "/api/upload-media/",
         UPLOAD_AUDIO: "/api/upload-audio/",
@@ -1356,7 +1358,8 @@ const ENDPOINTS = {
         ENROLL: "/api/enroll/"
     },
     YOUTUBE: {
-        DOWNLOAD: "/api/download-youtube/"
+        DOWNLOAD: "/api/download-video",
+        DOWNLOAD_PLAYLIST: "/api/download-playlist"
     },
     TASKS: {
         STATUS: (id)=>`/api/task-status/${id}`,
@@ -1377,8 +1380,12 @@ __turbopack_context__.s([
     ()=>useDeleteMediaMutation,
     "useGetMediaByIdQuery",
     ()=>useGetMediaByIdQuery,
+    "useGetMediaFileQuery",
+    ()=>useGetMediaFileQuery,
     "useGetMediaQuery",
     ()=>useGetMediaQuery,
+    "useGetTranscriptQuery",
+    ()=>useGetTranscriptQuery,
     "useUploadAudioMutation",
     ()=>useUploadAudioMutation,
     "useUploadMediaMutation",
@@ -1470,10 +1477,33 @@ const mediaApi = __TURBOPACK__imported__module__$5b$project$5d2f$store$2f$api$2f
                         url: __TURBOPACK__imported__module__$5b$project$5d2f$constants$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ENDPOINTS"].MEDIA.ANNOTATE(id),
                         method: "GET"
                     })
+            }),
+            // GET transcript with segments
+            getTranscript: builder.query({
+                query: (id)=>__TURBOPACK__imported__module__$5b$project$5d2f$constants$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ENDPOINTS"].MEDIA.GET_TRANSCRIPT(id),
+                providesTags: (_result, _error, id)=>[
+                        {
+                            type: "Media",
+                            id
+                        }
+                    ]
+            }),
+            // GET original media file (stream)
+            getMediaFile: builder.query({
+                query: (id)=>({
+                        url: __TURBOPACK__imported__module__$5b$project$5d2f$constants$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ENDPOINTS"].MEDIA.GET_FILE(id),
+                        responseHandler: (response)=>response.blob()
+                    }),
+                providesTags: (_result, _error, id)=>[
+                        {
+                            type: "Media",
+                            id
+                        }
+                    ]
             })
         })
 });
-const { useGetMediaQuery, useGetMediaByIdQuery, useUploadMediaMutation, useUploadAudioMutation, useDeleteMediaMutation, useAnnotateMediaMutation } = mediaApi;
+const { useGetMediaQuery, useGetMediaByIdQuery, useUploadMediaMutation, useUploadAudioMutation, useDeleteMediaMutation, useAnnotateMediaMutation, useGetTranscriptQuery, useGetMediaFileQuery } = mediaApi;
 }),
 "[project]/components/layout/Sidebar/Sidebar.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
