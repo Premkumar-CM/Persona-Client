@@ -8,10 +8,14 @@ import {
     AlertCircle,
     Loader2,
     Video,
-    CheckCircle
+    CheckCircle,
+    UserPlus,
+    Users
 } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useGetMediaByIdQuery, useGetTranscriptQuery } from "@/store/api/mediaApi";
+import { useEnrollPersonMutation, useGetEnrolledPersonsQuery } from "@/store/api/personaApi";
+import { Input } from "@/components/ui/input";
 
 export default function MediaDetailPage() {
     const params = useParams();
@@ -32,6 +36,15 @@ export default function MediaDetailPage() {
 
     // Poll every 3 seconds if the media item is processing/pending
     const [pollingInterval, setPollingInterval] = useState<number | undefined>(undefined);
+
+    // Enrollment modal state
+    const [enrollModalOpen, setEnrollModalOpen] = useState(false);
+    const [selectedFace, setSelectedFace] = useState<any>(null);
+    const [enrollmentMode, setEnrollmentMode] = useState<"new" | "existing" | null>(null);
+    const [personName, setPersonName] = useState("");
+    const [personAge, setPersonAge] = useState("");
+    const [personDescription, setPersonDescription] = useState("");
+    const [selectedExistingPerson, setSelectedExistingPerson] = useState("");
 
     // Fetch basic details
     const { data: media, isLoading: mediaLoading } = useGetMediaByIdQuery(id, {
@@ -56,6 +69,10 @@ export default function MediaDetailPage() {
         useGetTranscriptQuery(id, {
             pollingInterval
         });
+
+    // Enrollment API
+    const [enrollPerson, { isLoading: isEnrolling, isSuccess: enrollSuccess, isError: enrollError }] = useEnrollPersonMutation();
+    const { data: enrolledPersons } = useGetEnrolledPersonsQuery();
 
     // Dynamically adjust polling based on data
     if (media) {
@@ -136,6 +153,69 @@ export default function MediaDetailPage() {
     const handleSeekToFace = (face: any) => {
         if (face.identity) {
             router.push(`/person/${encodeURIComponent(face.identity)}`);
+        }
+    };
+
+    const handleOpenEnrollment = (face: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedFace(face);
+        setEnrollModalOpen(true);
+        setEnrollmentMode(null);
+    };
+
+    const handleCloseEnrollment = () => {
+        setEnrollModalOpen(false);
+        setSelectedFace(null);
+        setEnrollmentMode(null);
+        setPersonName("");
+        setPersonAge("");
+        setPersonDescription("");
+        setSelectedExistingPerson("");
+    };
+
+    const handleEnrollSubmit = async () => {
+        if (!selectedFace) return;
+
+        try {
+            if (enrollmentMode === "new") {
+                if (!personName || !personAge) return;
+
+                // Convert base64 to File
+                const response = await fetch(selectedFace.thumbnail_base64);
+                const blob = await response.blob();
+                const file = new File([blob], `face-${Date.now()}.jpg`, { type: "image/jpeg" });
+
+                const formData = new FormData();
+                formData.append("person_id", personName);
+                formData.append("age", personAge);
+                if (personDescription) formData.append("description", personDescription);
+                formData.append("face_image", file);
+
+                await enrollPerson(formData).unwrap();
+                handleCloseEnrollment();
+            } else if (enrollmentMode === "existing") {
+                if (!selectedExistingPerson) return;
+
+                // Convert base64 to File
+                const response = await fetch(selectedFace.thumbnail_base64);
+                const blob = await response.blob();
+                const file = new File([blob], `face-${Date.now()}.jpg`, { type: "image/jpeg" });
+
+                // Find the selected person's details
+                const selectedPerson = enrolledPersons?.find(p => p.name === selectedExistingPerson);
+                if (!selectedPerson) return;
+
+                const formData = new FormData();
+                formData.append("person_id", selectedExistingPerson);
+                formData.append("age", selectedPerson.age.toString());
+                if (selectedPerson.description) formData.append("description", selectedPerson.description);
+                formData.append("face_image", file);
+
+                await enrollPerson(formData).unwrap();
+                handleCloseEnrollment();
+            }
+        } catch (err) {
+            console.error("Enrollment failed:", err);
         }
     };
 
@@ -373,26 +453,41 @@ export default function MediaDetailPage() {
                                             {unknownFaces.map((face) => (
                                                 <div
                                                     key={face.id}
-                                                    className="flex items-center gap-3 bg-background border border-border rounded-lg p-2.5 hover:border-primary/50 transition-colors cursor-pointer"
-                                                    onClick={() => handleSeekToFace(face)}
+                                                    className="bg-background border border-border rounded-lg overflow-hidden"
                                                 >
-                                                    <div className="h-9 w-9 rounded overflow-hidden shrink-0 bg-muted">
-                                                        {face.thumbnail_base64 ? (
-                                                            <img
-                                                                src={face.thumbnail_base64}
-                                                                alt={face.identity}
-                                                                className="h-full w-full object-cover grayscale opacity-80"
-                                                                onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div className="h-full w-full flex items-center justify-center text-muted-foreground/50">?</div>
-                                                        )}
+                                                    <div
+                                                        className="flex items-center gap-3 p-2.5 hover:bg-accent/50 transition-colors cursor-pointer"
+                                                        onClick={() => handleSeekToFace(face)}
+                                                    >
+                                                        <div className="h-9 w-9 rounded overflow-hidden shrink-0 bg-muted">
+                                                            {face.thumbnail_base64 ? (
+                                                                <img
+                                                                    src={face.thumbnail_base64}
+                                                                    alt={face.identity}
+                                                                    className="h-full w-full object-cover grayscale opacity-80"
+                                                                    onError={(e) => {
+                                                                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center text-muted-foreground/50">?</div>
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-[13px] font-medium truncate text-muted-foreground">{face.identity}</p>
+                                                            <p className="text-[11px] text-muted-foreground">Appears {face.timestamps?.length || 0} times</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-[13px] font-medium truncate text-muted-foreground">{face.identity}</p>
-                                                        <p className="text-[11px] text-muted-foreground">Appears {face.timestamps?.length || 0} times</p>
+                                                    <div className="border-t border-border/50 px-2 py-1.5 bg-muted/30">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                                            onClick={(e) => handleOpenEnrollment(face, e)}
+                                                        >
+                                                            <UserPlus className="h-3 w-3 mr-1.5" />
+                                                            Enroll This Person
+                                                        </Button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -504,6 +599,188 @@ export default function MediaDetailPage() {
                 )}
 
             </div>
+
+            {/* Enrollment Modal */}
+            {enrollModalOpen && selectedFace && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCloseEnrollment}>
+                    <div className="bg-card border border-border rounded-xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                            <h3 className="text-lg font-bold">Enroll Face</h3>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCloseEnrollment}>
+                                <span className="text-xl">&times;</span>
+                            </Button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Face Preview */}
+                            <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+                                <div className="h-16 w-16 rounded overflow-hidden shrink-0 bg-muted">
+                                    {selectedFace.thumbnail_base64 && (
+                                        <img src={selectedFace.thumbnail_base64} alt="Face" className="h-full w-full object-cover" />
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold">Unknown Person</p>
+                                    <p className="text-xs text-muted-foreground">Appears {selectedFace.timestamps?.length || 0} times</p>
+                                </div>
+                            </div>
+
+                            {/* Mode Selection */}
+                            {!enrollmentMode ? (
+                                <div className="space-y-3">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto py-4 flex items-start gap-3 hover:border-primary"
+                                        onClick={() => setEnrollmentMode("new")}
+                                    >
+                                        <UserPlus className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
+                                        <div className="text-left">
+                                            <div className="font-semibold">New Enrollment</div>
+                                            <div className="text-xs text-muted-foreground">Create a new person profile</div>
+                                        </div>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full h-auto py-4 flex items-start gap-3 hover:border-primary"
+                                        onClick={() => setEnrollmentMode("existing")}
+                                    >
+                                        <Users className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
+                                        <div className="text-left">
+                                            <div className="font-semibold">Add to Existing</div>
+                                            <div className="text-xs text-muted-foreground">Add to an enrolled person</div>
+                                        </div>
+                                    </Button>
+                                </div>
+                            ) : enrollmentMode === "new" ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                        <Button variant="ghost" size="sm" onClick={() => setEnrollmentMode(null)}>
+                                            ← Back
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            Person Name
+                                        </label>
+                                        <Input
+                                            placeholder="e.g. John Doe"
+                                            value={personName}
+                                            onChange={(e) => setPersonName(e.target.value)}
+                                            className="bg-muted border-0"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            Age
+                                        </label>
+                                        <Input
+                                            type="number"
+                                            placeholder="e.g. 30"
+                                            value={personAge}
+                                            onChange={(e) => setPersonAge(e.target.value)}
+                                            className="bg-muted border-0"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            Description (Optional)
+                                        </label>
+                                        <Input
+                                            placeholder="Brief description..."
+                                            value={personDescription}
+                                            onChange={(e) => setPersonDescription(e.target.value)}
+                                            className="bg-muted border-0"
+                                        />
+                                    </div>
+                                    <Button
+                                        className="w-full mt-4"
+                                        disabled={!personName || !personAge || isEnrolling}
+                                        onClick={handleEnrollSubmit}
+                                    >
+                                        {isEnrolling ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Enrolling...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus className="mr-2 h-4 w-4" />
+                                                Enroll Person
+                                            </>
+                                        )}
+                                    </Button>
+                                    {enrollSuccess && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-success/10 text-success px-3 py-2 text-sm">
+                                            <CheckCircle className="h-4 w-4 shrink-0" />
+                                            Person enrolled successfully!
+                                        </div>
+                                    )}
+                                    {enrollError && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 text-destructive px-3 py-2 text-sm">
+                                            <AlertCircle className="h-4 w-4 shrink-0" />
+                                            Enrollment failed. Try again.
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                        <Button variant="ghost" size="sm" onClick={() => setEnrollmentMode(null)}>
+                                            ← Back
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            Select Person
+                                        </label>
+                                        <select
+                                            value={selectedExistingPerson}
+                                            onChange={(e) => setSelectedExistingPerson(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-lg bg-muted border-0 text-sm"
+                                        >
+                                            <option value="">-- Select a person --</option>
+                                            {enrolledPersons?.map((person) => (
+                                                <option key={person.id} value={person.name}>
+                                                    {person.name} (Age {person.age})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <Button
+                                        className="w-full mt-4"
+                                        disabled={!selectedExistingPerson || isEnrolling}
+                                        onClick={handleEnrollSubmit}
+                                    >
+                                        {isEnrolling ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Adding...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Users className="mr-2 h-4 w-4" />
+                                                Add to Person
+                                            </>
+                                        )}
+                                    </Button>
+                                    {enrollSuccess && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-success/10 text-success px-3 py-2 text-sm">
+                                            <CheckCircle className="h-4 w-4 shrink-0" />
+                                            Face added successfully!
+                                        </div>
+                                    )}
+                                    {enrollError && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 text-destructive px-3 py-2 text-sm">
+                                            <AlertCircle className="h-4 w-4 shrink-0" />
+                                            Failed to add face. Try again.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
