@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScanFace, Upload, Users, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useEnrollPersonMutation, useGetEnrolledPersonsQuery, EnrolledPerson } from "@/store/api/personaApi";
 
@@ -42,6 +42,47 @@ export default function EnrollmentPage() {
             e.target.value = "";
         }
     };
+
+    const handlePaste = useCallback((e: ClipboardEvent) => {
+        // Skip if pasting into an input or textarea
+        const target = e.target as HTMLElement;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        const items = Array.from(e.clipboardData?.items || []);
+        const imageFiles: File[] = [];
+
+        items.forEach((item) => {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    // Create a proper filename with timestamp
+                    const timestamp = Date.now();
+                    const ext = item.type.split('/')[1] || 'png';
+                    const renamedFile = new File([file], `pasted-image-${timestamp}.${ext}`, {
+                        type: item.type
+                    });
+                    imageFiles.push(renamedFile);
+                }
+            }
+        });
+
+        if (imageFiles.length > 0) {
+            e.preventDefault();
+            const newImages = imageFiles.map((file) => ({
+                file,
+                url: URL.createObjectURL(file),
+            }));
+            setSelectedImages((prev) => [...prev, ...newImages]);
+        }
+    }, []);
+
+    // Attach/detach paste event listener
+    useEffect(() => {
+        document.addEventListener('paste', handlePaste as EventListener);
+        return () => document.removeEventListener('paste', handlePaste as EventListener);
+    }, [handlePaste]);
 
     const handleEnroll = async () => {
         if (!personId || !age || selectedImages.length === 0) return;

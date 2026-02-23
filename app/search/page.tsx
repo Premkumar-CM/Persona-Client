@@ -76,6 +76,54 @@ export default function SearchPage() {
         }
     };
 
+    const handlePaste = useCallback((e: ClipboardEvent) => {
+        // Only process paste when on image search tab
+        if (activeTab !== "image") return;
+
+        // Skip if pasting into an input or textarea
+        const target = e.target as HTMLElement;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        const items = Array.from(e.clipboardData?.items || []);
+
+        // Find the first image item
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    e.preventDefault();
+
+                    // Create a proper filename with timestamp
+                    const timestamp = Date.now();
+                    const ext = item.type.split('/')[1] || 'png';
+                    const renamedFile = new File([file], `pasted-image-${timestamp}.${ext}`, {
+                        type: item.type
+                    });
+
+                    // Set the image and preview
+                    setSelectedImage(renamedFile);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setImagePreview(reader.result as string);
+                    };
+                    reader.readAsDataURL(renamedFile);
+
+                    break; // Only use the first image
+                }
+            }
+        }
+    }, [activeTab]);
+
+    // Attach/detach paste event listener
+    useEffect(() => {
+        if (activeTab === "image") {
+            document.addEventListener('paste', handlePaste as EventListener);
+            return () => document.removeEventListener('paste', handlePaste as EventListener);
+        }
+    }, [activeTab, handlePaste]);
+
     const formatTimestamp = (seconds: number) => {
         return new Date(seconds * 1000).toISOString().substr(11, 8);
     };

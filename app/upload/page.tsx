@@ -66,6 +66,48 @@ export default function UploadPage() {
         if (files.length > 0) setSelectedFiles(files);
     }, []);
 
+    const handlePaste = useCallback((e: ClipboardEvent) => {
+        // Only process paste when on file upload tab
+        if (activeTab !== "file") return;
+
+        // Skip if pasting into an input or textarea
+        const target = e.target as HTMLElement;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        const items = Array.from(e.clipboardData?.items || []);
+        const imageFiles: File[] = [];
+
+        items.forEach((item) => {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    // Create a proper filename with timestamp
+                    const timestamp = Date.now();
+                    const ext = item.type.split('/')[1] || 'png';
+                    const renamedFile = new File([file], `pasted-image-${timestamp}.${ext}`, {
+                        type: item.type
+                    });
+                    imageFiles.push(renamedFile);
+                }
+            }
+        });
+
+        if (imageFiles.length > 0) {
+            e.preventDefault();
+            setSelectedFiles((prev) => [...prev, ...imageFiles]);
+        }
+    }, [activeTab]);
+
+    // Attach/detach paste event listener
+    useEffect(() => {
+        if (activeTab === "file") {
+            document.addEventListener('paste', handlePaste as EventListener);
+            return () => document.removeEventListener('paste', handlePaste as EventListener);
+        }
+    }, [activeTab, handlePaste]);
+
     const handleUpload = async () => {
         if (selectedFiles.length === 0) return;
         for (const file of selectedFiles) {
