@@ -17,6 +17,7 @@ import {
 import { useState, useRef, useEffect, useCallback } from "react"; // Added useEffect and useCallback
 import { useUploadMediaMutation } from "@/store/api/mediaApi";
 import { useDownloadYoutubeMutation, useDownloadPlaylistMutation } from "@/store/api/personaApi";
+import PageContainer from "@/components/layout/PageContainer";
 
 // Define an interface for files with their object URLs
 interface SelectedFileWithUrl {
@@ -162,15 +163,12 @@ export default function UploadPage() {
     };
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Upload Media</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Upload videos, audio, or images for AI analysis.
-                </p>
-            </div>
-
-            <div className="flex items-center border-b border-border">
+        <PageContainer
+            title="Upload Media"
+            description="Upload videos, audio, or images for AI analysis."
+        >
+            <div className="space-y-6">
+                <div className="flex items-center border-b border-border">
                 <button
                     onClick={() => setActiveTab("file")}
                     className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "file"
@@ -477,6 +475,7 @@ export default function UploadPage() {
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+        </PageContainer>
     );
 }

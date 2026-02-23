@@ -239,7 +239,7 @@ export default function MediaDetailPage() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] max-w-[1400px] mx-auto w-full gap-3">
+        <div className="flex flex-col h-[calc(90vh-1rem)] md:h-[calc(90vh-1.5rem)] max-w-[1400px] mx-auto w-full gap-3">
             {/* Header - Compact */}
             <div className="flex items-center gap-3 shrink-0">
                 <div>

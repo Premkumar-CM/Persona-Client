@@ -87,21 +87,23 @@ export default function MediaPage() {
     };
 
     return (
-        <div className="space-y-8">
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight">Media Library</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Browse and manage all uploaded media files.
-                    </p>
+        <div className="flex flex-col h-[calc(90vh-1rem)] md:h-[calc(90vh-1.5rem)]">
+            {/* Fixed Header + Search */}
+            <div className="shrink-0 space-y-6">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-tight">Media Library</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Browse and manage all uploaded media files.
+                        </p>
+                    </div>
+                    <Button asChild>
+                        <Link href="/upload">Upload New</Link>
+                    </Button>
                 </div>
-                <Button asChild>
-                    <Link href="/upload">Upload New</Link>
-                </Button>
-            </div>
 
-            {/* Search & Refresh */}
-            <div className="flex items-center gap-3">
+                {/* Search & Refresh */}
+                <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -113,9 +115,12 @@ export default function MediaPage() {
                     <RefreshCw className="h-4 w-4" />
                 </Button>
             </div>
+            </div>
 
-            {/* Content */}
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {/* Scrollable Grid */}
+            <div className="flex-1 overflow-y-auto min-h-0 pt-6">
+                {/* Content */}
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="px-6 py-4 border-b border-border">
                     <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                         All Media
@@ -269,6 +274,7 @@ export default function MediaPage() {
                         </div>
                     )}
                 </div>
+            </div>
             </div>
         </div>
     );

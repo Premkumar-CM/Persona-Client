@@ -16,6 +16,7 @@ import {
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLazySearchMediaQuery, useSearchByImageMutation } from "@/store/api/personaApi";
 import { useRouter } from "next/navigation";
+import PageContainer from "@/components/layout/PageContainer";
 
 type TabType = "text" | "image";
 
@@ -129,16 +130,13 @@ export default function SearchPage() {
     };
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Search Media</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Search by video name, person name, transcript, or face image.
-                </p>
-            </div>
-
-            {/* Tab Navigation */}
-            <div className="flex items-center border-b border-border">
+        <PageContainer
+            title="Search Media"
+            description="Search by video name, person name, transcript, or face image."
+        >
+            <div className="space-y-6">
+                {/* Tab Navigation */}
+                <div className="flex items-center border-b border-border">
                 <button
                     onClick={() => setActiveTab("text")}
                     className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "text"
@@ -415,6 +413,7 @@ export default function SearchPage() {
 
 
             </div>
-        </div>
+            </div>
+        </PageContainer>
     );
 }

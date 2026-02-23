@@ -5,6 +5,7 @@ import { useGetMediaQuery, useDeleteMediaMutation } from "@/store/api/mediaApi";
 import { useStopProcessingMutation, useRestartProcessingMutation } from "@/store/api/personaApi";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import PageContainer from "@/components/layout/PageContainer";
 
 export default function ProcessingPage() {
     const router = useRouter();
@@ -75,16 +76,13 @@ export default function ProcessingPage() {
     ];
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Processing</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Monitor background tasks — transcription, face detection, and recognition.
-                </p>
-            </div>
-
-            {/* Status Overview */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <PageContainer
+            title="Processing"
+            description="Monitor background tasks — transcription, face detection, and recognition."
+        >
+            <div className="space-y-6">
+                {/* Status Overview */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {statCards.map(({ label, icon: Icon, iconColor, bg, value }) => (
                     <div key={label} className="rounded-xl border border-border bg-card p-6 flex items-center gap-4">
                         <div className={`h-10 w-10 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
@@ -207,6 +205,7 @@ export default function ProcessingPage() {
                     )}
                 </div>
             </div>
-        </div>
+            </div>
+        </PageContainer>
     );
 }

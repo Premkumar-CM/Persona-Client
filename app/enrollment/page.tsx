@@ -6,6 +6,7 @@ import { ScanFace, Upload, Users, Loader2, CheckCircle, AlertCircle } from "luci
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useEnrollPersonMutation, useGetEnrolledPersonsQuery, EnrolledPerson } from "@/store/api/personaApi";
+import PageContainer from "@/components/layout/PageContainer";
 
 export default function EnrollmentPage() {
     const router = useRouter();
@@ -104,17 +105,13 @@ export default function EnrollmentPage() {
     };
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Enrollment</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Enroll new persons into the AI face recognition system.
-                </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
+        <PageContainer
+            title="Enrollment"
+            description="Enroll new persons into the AI face recognition system."
+        >
+            <div className="grid gap-6 md:grid-cols-3 h-full">
                 {/* Enrollment Form */}
-                <div className="md:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+                <div className="md:col-span-2 overflow-y-auto rounded-xl border border-border bg-card overflow-hidden">
                     <div className="px-6 py-4 border-b border-border flex items-center gap-2">
                         <ScanFace className="h-4 w-4 text-primary" />
                         <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
@@ -269,8 +266,8 @@ export default function EnrollmentPage() {
                 </div>
 
                 {/* Enrolled Persons */}
-                <div className="rounded-xl border border-border bg-card overflow-hidden flex flex-col h-[600px] md:h-auto">
-                    <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-2 shrink-0 bg-muted/30">
+                <div className="flex flex-col min-h-0 rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="shrink-0 px-6 py-4 border-b border-border flex items-center justify-between gap-2 bg-muted/30">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-primary" />
                             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
@@ -342,6 +339,6 @@ export default function EnrollmentPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }

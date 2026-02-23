@@ -6,6 +6,8 @@ export const ENDPOINTS = {
         GET_ONE: (id: string) => `/api/media/${id}`,
         GET_TRANSCRIPT: (id: string) => `/api/media/${id}/transcript`,
         GET_FILE: (id: string) => `/api/media/${id}/file`,
+        GET_CLIP: (id: string) => `/api/media/${id}/clip`,
+        THUMBNAIL_LIST: "/api/thumbnails/",
         DELETE: (id: string) => `/api/media/${id}`,
         UPLOAD: "/api/upload-media/",
         UPLOAD_AUDIO: "/api/upload-audio/",

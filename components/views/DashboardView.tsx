@@ -19,6 +19,7 @@ import { useStopProcessingMutation, useRestartProcessingMutation } from "@/store
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PageContainer from "@/components/layout/PageContainer";
 
 interface StatCardProps {
     title: string;
@@ -122,17 +123,13 @@ export default function DashboardView() {
     const recentMedia = media?.slice(0, 5) ?? [];
 
     return (
-        <div className="space-y-8">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Dashboard</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    AI-powered face identification and media analysis.
-                </p>
-            </div>
-
-            {/* Stats */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <PageContainer
+            title="Dashboard"
+            description="AI-powered face identification and media analysis."
+        >
+            <div className="space-y-6">
+                {/* Stats */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     title="Total Media"
                     icon={FileVideo}
@@ -340,6 +337,7 @@ export default function DashboardView() {
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </PageContainer>
     );
 }
