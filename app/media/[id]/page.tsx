@@ -469,24 +469,24 @@ export default function MediaDetailPage() {
                                         {transcript.transcript_segments.map((segment, idx) => {
                                             const isActive = currentTime >= segment.start && currentTime <= segment.end;
                                             return (
-                                                <button
+                                                <div
                                                     key={idx}
                                                     onClick={() => seekToTime(segment.start)}
-                                                    className={`w-full text-left rounded-lg p-3 border transition-all ${isActive
+                                                    className={`w-full text-left rounded-lg p-3 border transition-all cursor-pointer select-text ${isActive
                                                         ? "bg-primary/10 border-primary shadow-sm"
                                                         : "bg-background border-border hover:border-primary/50"
                                                         }`}
                                                 >
-                                                    <div className="text-xs text-primary font-mono mb-2 flex items-center gap-2">
+                                                    <div className="text-xs text-primary font-mono mb-2 flex items-center gap-2 select-text">
                                                         <span>{new Date(segment.start * 1000).toISOString().substr(11, 8)}</span>
                                                         <span className="text-muted-foreground">→</span>
                                                         <span>{new Date(segment.end * 1000).toISOString().substr(11, 8)}</span>
                                                     </div>
-                                                    <div className={`text-sm leading-relaxed ${isActive ? "text-foreground font-medium" : "text-muted-foreground"
+                                                    <div className={`text-sm leading-relaxed select-text ${isActive ? "text-foreground font-medium" : "text-muted-foreground"
                                                         }`}>
                                                         {segment.text}
                                                     </div>
-                                                </button>
+                                                </div>
                                             );
                                         })}
                                     </div>
