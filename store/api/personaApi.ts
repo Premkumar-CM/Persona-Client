@@ -6,6 +6,14 @@ export interface EnrollResponse {
     message: string;
 }
 
+export interface EnrolledPerson {
+    id: string;
+    name: string;
+    age: number;
+    description: string | null;
+    thumbnail_url: string | null;
+}
+
 export interface SearchTextResponse {
     media: {
         id: string;
@@ -141,6 +149,12 @@ export const personaApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: [{ type: "Media", id: "LIST" }],
         }),
+
+        // List Enrolled
+        getEnrolledPersons: builder.query<EnrolledPerson[], void>({
+            query: () => ENDPOINTS.ENROLLMENT.LIST,
+            providesTags: ["Enrollment"],
+        }),
     }),
 });
 
@@ -154,4 +168,5 @@ export const {
     useGetTaskStatusQuery,
     useStopProcessingMutation,
     useRestartProcessingMutation,
+    useGetEnrolledPersonsQuery,
 } = personaApi;

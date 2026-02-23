@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScanFace, Upload, Users, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useEnrollPersonMutation } from "@/store/api/personaApi";
+import { useRouter } from "next/navigation";
+import { useEnrollPersonMutation, useGetEnrolledPersonsQuery, EnrolledPerson } from "@/store/api/personaApi";
 
 export default function EnrollmentPage() {
+    const router = useRouter();
     const [personId, setPersonId] = useState("");
     const [age, setAge] = useState("");
     const [description, setDescription] = useState("");
@@ -14,6 +16,7 @@ export default function EnrollmentPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [enrollPerson, { isLoading, isSuccess, isError }] = useEnrollPersonMutation();
+    const { data: enrolledPersons, isLoading: loadingEnrolled, isError: errorEnrolled } = useGetEnrolledPersonsQuery();
 
     // Cleanup object URLs to avoid memory leaks
     const imagesRef = useRef(selectedImages);
@@ -224,23 +227,76 @@ export default function EnrollmentPage() {
                 </div>
 
                 {/* Enrolled Persons */}
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="px-6 py-4 border-b border-border flex items-center gap-2">
-                        <Users className="h-4 w-4 text-primary" />
-                        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                            Enrolled
-                        </h2>
-                    </div>
-                    <div className="p-6">
-                        <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
-                            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                                <Users className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <p className="text-sm font-semibold">No persons enrolled</p>
-                            <p className="text-xs text-muted-foreground">
-                                Enroll your first person to start recognition
-                            </p>
+                <div className="rounded-xl border border-border bg-card overflow-hidden flex flex-col h-[600px] md:h-auto">
+                    <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-2 shrink-0 bg-muted/30">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-primary" />
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                                Enrolled Directory
+                            </h2>
                         </div>
+                        {enrolledPersons && enrolledPersons.length > 0 && (
+                            <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                {enrolledPersons.length}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 flex flex-col min-h-0">
+                        {loadingEnrolled ? (
+                            <div className="flex flex-col items-center justify-center py-10 gap-3 m-auto">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                <p className="text-sm text-muted-foreground">Loading directory...</p>
+                            </div>
+                        ) : errorEnrolled ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center gap-2 m-auto">
+                                <AlertCircle className="h-8 w-8 text-destructive" />
+                                <p className="text-sm font-semibold">Failed to load enrolled persons</p>
+                                <p className="text-xs text-muted-foreground">Please check the backend connection</p>
+                            </div>
+                        ) : enrolledPersons && enrolledPersons.length > 0 ? (
+                            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2 content-start pb-4">
+                                {enrolledPersons.map((person) => (
+                                    <div
+                                        key={person.id}
+                                        onClick={() => router.push(`/person/${encodeURIComponent(person.name)}`)}
+                                        className="group relative rounded-xl border border-border bg-background overflow-hidden hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm"
+                                    >
+                                        <div className="aspect-square w-full bg-muted relative">
+                                            <img
+                                                src={`/api/enroll/images/${person.id}`}
+                                                alt={person.name}
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.onerror = null; // prevent infinite loop
+                                                    target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                                                    target.className = "absolute inset-0 w-full h-full object-contain p-4 opacity-50";
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                                            <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-col">
+                                                <p className="text-sm font-bold text-white truncate drop-shadow-md">
+                                                    {person.name}
+                                                </p>
+                                                <p className="text-[10px] text-white/80 font-medium truncate">
+                                                    Age {person.age} {person.description && `• ${person.description}`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-10 text-center gap-2 m-auto">
+                                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                                    <Users className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm font-semibold">No persons enrolled</p>
+                                <p className="text-xs text-muted-foreground text-balance">
+                                    Enroll your first person to start recognition
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

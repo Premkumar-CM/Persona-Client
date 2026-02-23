@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     FileVideo,
@@ -15,16 +15,20 @@ import { useGetMediaByIdQuery, useGetTranscriptQuery } from "@/store/api/mediaAp
 
 export default function MediaDetailPage() {
     const params = useParams();
-    const router = useRouter(); // Keeping router if we still want it, but avoiding back btn
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const id = params.id as string;
 
-    const [activeTab, setActiveTab] = useState<"annotated" | "transcript">("annotated");
+    const initialTab = searchParams.get("tab") as "annotated" | "transcript" | null;
+    const initialTime = searchParams.get("t");
+
+    const [activeTab, setActiveTab] = useState<"annotated" | "transcript">(initialTab || "annotated");
     const [videoError, setVideoError] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
+    const [currentTime, setCurrentTime] = useState(initialTime ? parseFloat(initialTime) : 0);
     const videoRef = useRef<HTMLVideoElement>(null);
     const originalVideoRef = useRef<HTMLVideoElement>(null);
     const transcriptContainerRef = useRef<HTMLDivElement>(null);
-    const pendingSeekTime = useRef<number | null>(null);
+    const pendingSeekTime = useRef<number | null>(initialTime ? parseFloat(initialTime) : null);
 
     // Poll every 3 seconds if the media item is processing/pending
     const [pollingInterval, setPollingInterval] = useState<number | undefined>(undefined);
@@ -77,30 +81,38 @@ export default function MediaDetailPage() {
 
     // Auto-scroll to active transcript segment
     useEffect(() => {
-        if (!transcript?.transcript_segments || !transcriptContainerRef.current) return;
+        if (!transcript?.transcript_segments || !transcriptContainerRef.current || activeTab !== "transcript") return;
 
-        const activeIndex = transcript.transcript_segments.findIndex(
-            seg => currentTime >= seg.start && currentTime <= seg.end
-        );
+        // Small timeout ensures the DOM has fully rendered the transcript lines
+        // especially during the initial deep-linked load
+        const timer = setTimeout(() => {
+            if (!transcriptContainerRef.current) return;
 
-        if (activeIndex !== -1) {
-            const container = transcriptContainerRef.current;
-            // The scrollable div has a child div wrapping the buttons
-            const wrapper = container.children[0];
-            if (wrapper && wrapper.children.length > activeIndex) {
-                const activeElement = wrapper.children[activeIndex] as HTMLElement;
-                if (activeElement) {
-                    const containerRect = container.getBoundingClientRect();
-                    const elementRect = activeElement.getBoundingClientRect();
-                    const isVisible = elementRect.top >= containerRect.top && elementRect.bottom <= containerRect.bottom;
+            const activeIndex = transcript.transcript_segments.findIndex(
+                seg => currentTime >= seg.start && currentTime <= seg.end
+            );
 
-                    if (!isVisible) {
-                        activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (activeIndex !== -1) {
+                const container = transcriptContainerRef.current;
+                // The scrollable div has a child div wrapping the buttons
+                const wrapper = container.children[0];
+                if (wrapper && wrapper.children.length > activeIndex) {
+                    const activeElement = wrapper.children[activeIndex] as HTMLElement;
+                    if (activeElement) {
+                        const containerRect = container.getBoundingClientRect();
+                        const elementRect = activeElement.getBoundingClientRect();
+                        const isVisible = elementRect.top >= containerRect.top && elementRect.bottom <= containerRect.bottom;
+
+                        if (!isVisible) {
+                            activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }
                 }
             }
-        }
-    }, [currentTime, transcript]);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [currentTime, transcript, activeTab]);
 
     useEffect(() => {
         if (activeTab === "annotated") {
@@ -109,17 +121,8 @@ export default function MediaDetailPage() {
     }, [activeTab]);
 
     const handleSeekToFace = (face: any) => {
-        if (face.timestamps && face.timestamps.length > 0 && videoRef.current) {
-            // The timestamp might be a number or an object depending on backend changes
-            const timestampObj = face.timestamps[0];
-            const timeToSeek = typeof timestampObj === 'number'
-                ? timestampObj
-                : timestampObj.startTime;
-
-            if (timeToSeek !== undefined && timeToSeek !== null) {
-                videoRef.current.currentTime = timeToSeek;
-                videoRef.current.play().catch(e => console.error("Playback failed on face seek:", e));
-            }
+        if (face.identity) {
+            router.push(`/person/${encodeURIComponent(face.identity)}`);
         }
     };
 
@@ -291,7 +294,6 @@ export default function MediaDetailPage() {
                                         ref={videoRef}
                                         src={streamSrc}
                                         controls
-                                        autoPlay
                                         className="w-full h-full object-contain"
                                         onError={handleError}
                                     >
@@ -300,14 +302,6 @@ export default function MediaDetailPage() {
                                 </div>
                             )}
 
-                            {/* Live Caption Overlay */}
-                            {activeTranscriptSegment && !videoError && (
-                                <div className="absolute bottom-16 left-0 right-0 flex justify-center pointer-events-none px-8 md:px-16 z-10 break-words">
-                                    <div className="bg-black/60 text-white px-4 py-2 rounded font-medium text-sm md:text-[15px] leading-snug text-center shadow-lg backdrop-blur-sm border border-white/10" style={{ textShadow: "1px 1px 2px black" }}>
-                                        {activeTranscriptSegment.text}
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Faces Sidebar (Right) */}

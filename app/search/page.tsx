@@ -17,11 +17,11 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useLazySearchMediaQuery, useSearchByImageMutation } from "@/store/api/personaApi";
 import { useRouter } from "next/navigation";
 
-type TabType = "video" | "image" | "transcript";
+type TabType = "text" | "image";
 
 export default function SearchPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<TabType>("video");
+    const [activeTab, setActiveTab] = useState<TabType>("text");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -85,59 +85,46 @@ export default function SearchPage() {
             <div>
                 <h1 className="text-3xl font-black tracking-tight">Search Media</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Search by video name, face image, or transcript content.
+                    Search by video name, person name, transcript, or face image.
                 </p>
             </div>
 
             {/* Tab Navigation */}
             <div className="flex items-center border-b border-border">
                 <button
-                    onClick={() => setActiveTab("video")}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === "video"
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
+                    onClick={() => setActiveTab("text")}
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "text"
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                 >
                     <Search className="h-4 w-4" />
-                    Video Name
+                    Video Name, Person & Transcript
                 </button>
                 <button
                     onClick={() => setActiveTab("image")}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === "image"
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === "image"
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
                 >
                     <Image className="h-4 w-4" />
                     Image Search
-                </button>
-                <button
-                    onClick={() => setActiveTab("transcript")}
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === "transcript"
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                    <FileText className="h-4 w-4" />
-                    Transcript Search
                 </button>
             </div>
 
             {/* Tab Content */}
             <div className="rounded-xl border border-border bg-card overflow-hidden">
-                {/* Video Name Search Tab */}
-                {activeTab === "video" && (
+                {/* Text Search Tab */}
+                {activeTab === "text" && (
                     <div className="p-6 space-y-6">
                         <div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
-                                Search by Video Name or Person
+                                Search Everything
                             </h2>
                             <div className="flex gap-3">
                                 <Input
-                                    placeholder="Enter video name or person name..."
+                                    placeholder="Enter video name, person name, or transcript keyword..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleTextSearch()}
@@ -173,31 +160,62 @@ export default function SearchPage() {
                                     Found {textSearchResults.media.length} result{textSearchResults.media.length !== 1 ? "s" : ""}
                                 </p>
                                 {textSearchResults.media.length > 0 ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-4">
                                         {textSearchResults.media.map((item) => (
                                             <div
                                                 key={item.id}
-                                                className="flex items-center gap-4 rounded-lg px-4 py-3 bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                                                onClick={() => router.push(`/media/${item.id}`)}
+                                                className="rounded-lg border border-border bg-background overflow-hidden hover:border-primary/50 transition-colors"
                                             >
-                                                <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center shrink-0">
-                                                    <FileVideo className="h-5 w-5 text-muted-foreground" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{item.filename}</p>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <Clock className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {new Date(item.uploaded_at).toLocaleDateString()}
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground capitalize">
-                                                            • {item.status}
-                                                        </span>
+                                                <div
+                                                    className="flex items-center gap-4 px-4 py-3 bg-muted/20 cursor-pointer"
+                                                    onClick={() => router.push(`/media/${item.id}`)}
+                                                >
+                                                    <div className="h-10 w-10 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
+                                                        <FileVideo className="h-5 w-5 text-muted-foreground" />
                                                     </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium truncate">{item.filename}</p>
+                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {new Date(item.uploaded_at).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-xs text-muted-foreground capitalize">
+                                                                • {item.status}
+                                                            </span>
+                                                            {item.matching_segments && item.matching_segments.length > 0 && (
+                                                                <span className="text-xs text-primary font-medium">
+                                                                    • {item.matching_segments.length} transcript match{item.matching_segments.length !== 1 ? 'es' : ''}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="shrink-0 bg-primary/5 text-primary">
+                                                        <Play className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="shrink-0">
-                                                    <Play className="h-4 w-4" />
-                                                </Button>
+
+                                                {/* Transcript Matches if present */}
+                                                {item.matching_segments && item.matching_segments.length > 0 && (
+                                                    <div className="p-4 space-y-2 max-h-64 overflow-y-auto border-t border-border/50 bg-background">
+                                                        {item.matching_segments.map((segment, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="rounded-lg p-3 bg-muted/40 hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border"
+                                                                onClick={() => router.push(`/media/${item.id}?t=${segment.start}&tab=transcript`)}
+                                                            >
+                                                                <div className="text-xs text-primary font-mono mb-1.5">
+                                                                    {formatTimestamp(segment.start)} → {formatTimestamp(segment.end)}
+                                                                </div>
+                                                                <p className="text-sm text-foreground leading-relaxed">
+                                                                    {segment.text}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -347,111 +365,7 @@ export default function SearchPage() {
                     </div>
                 )}
 
-                {/* Transcript Search Tab */}
-                {activeTab === "transcript" && (
-                    <div className="p-6 space-y-6">
-                        <div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">
-                                Search Within Transcripts
-                            </h2>
-                            <div className="flex gap-3">
-                                <Input
-                                    placeholder="Search for words or phrases in transcripts..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && handleTextSearch()}
-                                    className="flex-1 bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                                />
-                                <Button onClick={handleTextSearch} disabled={isTextSearching || !searchQuery.trim()}>
-                                    {isTextSearching ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Searching...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Search className="mr-2 h-4 w-4" />
-                                            Search
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
 
-                        {/* Results */}
-                        {textSearchError && (
-                            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 text-destructive px-4 py-3">
-                                <AlertCircle className="h-5 w-5 shrink-0" />
-                                <p className="text-sm">Search failed. Please try again.</p>
-                            </div>
-                        )}
-
-                        {textSearchResults && (
-                            <div className="space-y-3">
-                                <p className="text-sm text-muted-foreground">
-                                    Found {textSearchResults.media.filter(m => m.matching_segments && m.matching_segments.length > 0).length} video{textSearchResults.media.filter(m => m.matching_segments && m.matching_segments.length > 0).length !== 1 ? "s" : ""} with matching transcript
-                                </p>
-                                {textSearchResults.media.filter(m => m.matching_segments && m.matching_segments.length > 0).length > 0 ? (
-                                    <div className="space-y-4">
-                                        {textSearchResults.media
-                                            .filter(m => m.matching_segments && m.matching_segments.length > 0)
-                                            .map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="rounded-lg border border-border bg-background overflow-hidden"
-                                                >
-                                                    <div
-                                                        className="flex items-center gap-4 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                                                        onClick={() => router.push(`/media/${item.id}`)}
-                                                    >
-                                                        <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center shrink-0">
-                                                            <FileVideo className="h-5 w-5 text-muted-foreground" />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">{item.filename}</p>
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {item.matching_segments?.length || 0} matching segment{(item.matching_segments?.length || 0) !== 1 ? "s" : ""}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <Button variant="ghost" size="icon" className="shrink-0">
-                                                            <Play className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                    <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
-                                                        {item.matching_segments?.map((segment, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                className="rounded-lg p-3 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-                                                                onClick={() => router.push(`/media/${item.id}`)}
-                                                            >
-                                                                <div className="text-xs text-primary font-mono mb-1.5">
-                                                                    {formatTimestamp(segment.start)} → {formatTimestamp(segment.end)}
-                                                                </div>
-                                                                <p className="text-sm text-foreground leading-relaxed">
-                                                                    {segment.text}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                                        <FileText className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                        <p className="text-sm font-semibold">No transcript matches found</p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            Try searching with different keywords
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );

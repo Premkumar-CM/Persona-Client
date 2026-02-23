@@ -17,6 +17,7 @@ export const ENDPOINTS = {
     },
     ENROLLMENT: {
         ENROLL: "/api/enroll/",
+        LIST: "/api/persons/enrolled/",
     },
     YOUTUBE: {
         DOWNLOAD: "/api/download-video",
